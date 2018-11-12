@@ -280,29 +280,9 @@ def run_cifar(flags_obj):
 
       input_function = (flags_obj.use_synthetic_data and get_synth_input_fn(flags_core.get_tf_dtype(flags_obj)) or input_fn)
 
-      print("\n add training features similar to resnet_run_loop.resnet_main and add tf.Variables (global variable) between machines ")
-      print("\n do supervisor just like in mnist")
-
+      # run training
       resnet_run_loop.resnet_main(flags_obj, cifar10_model_fn, input_function, DATASET_NAME,shape=[_HEIGHT, _WIDTH, _NUM_CHANNELS])
       
-    with tf.name_scope('train'):
-      ## how to correctly get cross_entropy??
-      train_op = grad_op.minimize(tf.cross_entropy, global_step = global_step)
-
-    # init global variables
-    init_op = tf.global_variable_initializer()
-    sv = tf.train.Supervisor(is_chief = (flags_obj.task_index == 0), global_step = global_step, init_op=init_op)
-
-    begin_time = time.time()
-    
-    with sv.prepare_or_wait_for_session(server.target) as sess:
-      
-      print("\n add summary later")
-      print("\n Total Time: %3.2fs" % float(time.time() - begin_time))
-      print("\n Test-Accuracy: ???")
-      sess.run(train_op)
-    sv.stop()
-    print("\n DONE")
 
 def main(_):
   with logger.benchmark_context(flags.FLAGS):
