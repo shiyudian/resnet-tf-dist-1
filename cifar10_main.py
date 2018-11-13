@@ -30,6 +30,18 @@ from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
 import time
 
+## build a profiler
+#builder = tf.profiler.ProfileOptionBuilder
+#opts = builder(builder.time_and_memory()).order_by('micros').build()
+#opts2 = tf.profiler.ProfileOptionBuilder.trainable_variable_parameter()
+#with tf.contrib.tfprof.ProfileContext('~/profiler-ui') as pctx:
+#  pctx.trace_next_step()
+#  pctx.dump_next_step()
+#  pctx.profiler.profile_operations(options = opts)
+  #pctx.add_auto_profiling('op', opts, [15, 18, 20])
+  #pctx.add_auto_profiling('scope',opts2,[20])
+
+
 ## cluster specification
 parameter_servers = ["192.168.27.80:2221"]
 workers = ["192.168.27.80:2222", "192.168.27.81:2222","192.168.27.82:2222"]
@@ -285,10 +297,19 @@ def run_cifar(flags_obj):
       
 
 def main(_):
+  # create options to profile time/memory as well as parameters
+  builder = tf.profiler.ProfileOptionBuilder
+  opts = builder(builder.time_and_memory()).order_by('micros').build()
+  opts2 = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
   with logger.benchmark_context(flags.FLAGS):
-    print("\n run_cifar")
-    run_cifar(flags.FLAGS)
-
+    print("\n add profiler and run_cifar")
+    with tf.contrib.tfprof.ProfileContext('./') as pctx:
+      #pctx.trace_next_step()
+      #pctx.dump_next_step()       
+      #pctx.add_auto_profiling('op',opts2)
+      #pctx.add_auto_profiling('scope',opts2)
+      run_cifar(flags.FLAGS)
+      #pctx.profiler.profile_operations(options=opts)
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)
