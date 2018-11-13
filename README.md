@@ -1,3 +1,6 @@
+
+Reference to tensorflow official
+
 # ResNet in TensorFlow
 
 Deep residual networks, or ResNets for short, provided the breakthrough idea of
