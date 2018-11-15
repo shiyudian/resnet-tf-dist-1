@@ -30,18 +30,6 @@ from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
 import time
 
-## build a profiler
-#builder = tf.profiler.ProfileOptionBuilder
-#opts = builder(builder.time_and_memory()).order_by('micros').build()
-#opts2 = tf.profiler.ProfileOptionBuilder.trainable_variable_parameter()
-#with tf.contrib.tfprof.ProfileContext('~/profiler-ui') as pctx:
-#  pctx.trace_next_step()
-#  pctx.dump_next_step()
-#  pctx.profiler.profile_operations(options = opts)
-  #pctx.add_auto_profiling('op', opts, [15, 18, 20])
-  #pctx.add_auto_profiling('scope',opts2,[20])
-
-
 ## cluster specification
 parameter_servers = ["192.168.27.80:2221"]
 workers = ["192.168.27.80:2222", "192.168.27.81:2222","192.168.27.82:2222"]
