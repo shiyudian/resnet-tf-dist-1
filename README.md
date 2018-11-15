@@ -48,5 +48,3 @@ lsof -wni tcp:2222
 # will return process ids
 kill id
 ```
-
-### keypoints
