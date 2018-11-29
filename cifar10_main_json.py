@@ -284,32 +284,20 @@ def run_cifar(flags_obj):
       # run training
       #resnet_run_loop.resnet_main(flags_obj, cifar10_model_fn, input_function, DATASET_NAME,shape=[_HEIGHT, _WIDTH, _NUM_CHANNELS])
       config = tf.ConfigProto()
-	  with tf.Session(config=config) as sess:
+      with tf.Session(config=config) as sess:
         options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
-          run_metadata = tf.RunMetadata()
+        run_metadata = tf.RunMetadata()
 	       # feed_dict
-          sess.run(resnet_run_loop.resnet_main(flags_obj,cifar10_model_fn,input_function,DATA_NAME,shape=[_HEIGHT,_WIDTH,_NUM_CHANNELS]), options=options, run_metadata=run_metadata)
-          fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-          chrome_trace = fetched_timeline.generate_chrome_trace_format()
-		  with open('timeline_cifar10.json','w') as f:	
-            f.write(chrome_trace)
+        sess.run(resnet_run_loop.resnet_main(flags_obj,cifar10_model_fn,input_function,DATA_NAME,shape=[_HEIGHT,_WIDTH,_NUM_CHANNELS]), options=options, run_metadata=run_metadata)
+        fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+        chrome_trace = fetched_timeline.generate_chrome_trace_format()
+        with open('timeline_cifar10.json','w') as f:	
+          f.write(chrome_trace)
 
 def main(_):
 
   with logger.benchmark_context(flags.FLAGS):
     run_cifar(flags.FLAGS)
-
-    config = tf.ConfigProto()
-    with tf.Session(config=config) as sess:
-      options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
-      run_metadata = tf.RunMetadata()	
-	  # feed_dict
-      sess.run(, options=options, run_metadata=run_metadata)
-	  #run_cifar(flags.FLAGS)
-      fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-      chrome_trace = fetched_timeline.generate_chrome_trace_format()
-      with open('timeline_cifar10.json','w') as f:
-        f.write(chrome_trace)
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)
