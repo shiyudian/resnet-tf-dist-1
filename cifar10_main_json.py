@@ -282,19 +282,32 @@ def run_cifar(flags_obj):
       input_function = (flags_obj.use_synthetic_data and get_synth_input_fn(flags_core.get_tf_dtype(flags_obj)) or input_fn)
 
       # run training
-      resnet_run_loop.resnet_main(flags_obj, cifar10_model_fn, input_function, DATASET_NAME,shape=[_HEIGHT, _WIDTH, _NUM_CHANNELS])
-      
+      #resnet_run_loop.resnet_main(flags_obj, cifar10_model_fn, input_function, DATASET_NAME,shape=[_HEIGHT, _WIDTH, _NUM_CHANNELS])
+      config = tf.ConfigProto()
+	  with tf.Session(config=config) as sess:
+        options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
+          run_metadata = tf.RunMetadata()
+	       # feed_dict
+          sess.run(resnet_run_loop.resnet_main(flags_obj,cifar10_model_fn,input_function,DATA_NAME,shape=[_HEIGHT,_WIDTH,_NUM_CHANNELS]), options=options, run_metadata=run_metadata)
+          fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+          chrome_trace = fetched_timeline.generate_chrome_trace_format()
+		  with open('timeline_cifar10.json','w') as f:	
+            f.write(chrome_trace)
 
 def main(_):
 
   with logger.benchmark_context(flags.FLAGS):
+    run_cifar(flags.FLAGS)
+
     config = tf.ConfigProto()
     with tf.Session(config=config) as sess:
       options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
       run_metadata = tf.RunMetadata()	
 	  # feed_dict
-      sess.run(run_cifar(flags.FLAGS), options=options, run_metadata=run_metadata)
+      sess.run(, options=options, run_metadata=run_metadata)
 	  #run_cifar(flags.FLAGS)
+      fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+      chrome_trace = fetched_timeline.generate_chrome_trace_format()
       with open('timeline_cifar10.json','w') as f:
         f.write(chrome_trace)
 
