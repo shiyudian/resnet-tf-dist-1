@@ -288,16 +288,15 @@ def run_cifar(flags_obj):
 def main(_):
 
   with logger.benchmark_context(flags.FLAGS):
-	config = tf.ConfigProto()
-	with tf.Session(config=config) as sess:
-		options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
-		run_metadata = tf.RunMetadata()
-		
-		# feed_dict
-		sess.run(run_cifar(flags.FLAGS, options=options, run_metadata=run_metadata)
-	    #run_cifar(flags.FLAGS)
-		with open('timeline_cifar10.json','w') as f:
-			f.write(chrome_trace)
+    config = tf.ConfigProto()
+    with tf.Session(config=config) as sess:
+      options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
+      run_metadata = tf.RunMetadata()	
+	  # feed_dict
+      sess.run(run_cifar(flags.FLAGS), options=options, run_metadata=run_metadata)
+	  #run_cifar(flags.FLAGS)
+      with open('timeline_cifar10.json','w') as f:
+        f.write(chrome_trace)
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)
