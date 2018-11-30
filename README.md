@@ -48,3 +48,6 @@ lsof -wni tcp:2222
 # will return process ids
 kill id
 ```
+
+### cifar10_main_profiler.py
+This file added profiler-ui which produces a profile file (timeline) must be read by chrome
