@@ -297,7 +297,7 @@ def main(_):
       #pctx.add_auto_profiling('op',opts2)
       #pctx.add_auto_profiling('scope',opts2)
       run_cifar(flags.FLAGS)
-      #pctx.profiler.profile_operations(options=opts)
+      pctx.profiler.profile_operations(options=opts)
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)

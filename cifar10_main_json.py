@@ -28,10 +28,7 @@ from official.utils.flags import core as flags_core
 from official.utils.logs import logger
 from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
-import time
-import tempfile
 
-from tensorflow.python.client import timeline
 
 ## cluster specification
 parameter_servers = ["192.168.27.80:2221"]
@@ -289,16 +286,16 @@ def run_cifar(flags_obj):
       #config = tf.ConfigProto()
       #with tf.Session(config=config) as sess:
       #with tf.Session() as sess:		  
-      options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
-      run_metadata = tf.RunMetadata()
+#      options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
+#      run_metadata = tf.RunMetadata()
 	    
         #feed_dict = {input_function.inputs, input_function.targets}
 
         #sess.run(options=options, run_metadata=run_metadata)
-      fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-      chrome_trace = fetched_timeline.generate_chrome_trace_format()
-      with open('timeline_cifar10.json','w') as f:	
-        f.write(chrome_trace)
+#      fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+#      chrome_trace = fetched_timeline.generate_chrome_trace_format()
+#      with open('timeline_cifar10.json','w') as f:	
+#        f.write(chrome_trace)
 
 def main(_):
 

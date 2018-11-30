@@ -42,7 +42,7 @@ from official.resnet import imagenet_preprocessing
 from official.utils.misc import distribution_utils
 from official.utils.misc import model_helpers
 
-from tensorflow.python.client import timeline
+
 ################################################################################
 # Functions for input processing.
 ################################################################################
@@ -516,15 +516,6 @@ def resnet_main(
       flags_obj.hooks,
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
-  
-  with tf.Session(config = session_config) as sess:
-    options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
-    run_metadata = tf.RunMetadata()
-	sess.run(train_op,options=options, run_metadata=run_metadata)
-	fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-	chrome_trace = fetched_timeline.generate_chrome_trace_format()
-	with open('timeline_json_run_loop.json','w') as f:
-      f.write(chrome_trace)
 
   def input_fn_train(num_epochs):
     return input_function(
@@ -639,7 +630,7 @@ def define_resnet_flags(resnet_size_choices=None):
           'be used for CIFAR.'))
 
   choice_kwargs = dict(
-      name='resnet_size', short_name='rs', default='8',
+      name='resnet_size', short_name='rs', default='50',
       help=flags_core.help_wrap('The size of the ResNet model to use.'))
 
   if resnet_size_choices is None:
