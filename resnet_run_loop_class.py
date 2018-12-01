@@ -42,6 +42,42 @@ from official.resnet import imagenet_preprocessing
 from official.utils.misc import distribution_utils
 from official.utils.misc import model_helpers
 
+from tensorflow.python.training.session_run_hook import SessionRunHook, SessionRunArgs
+from tensorflow.python.training import training_util
+from tensorflow.python.training.basic_session_run_hooks import SecondOrStepTimer
+
+class MetadataHook(SessionRunHook):
+  def __init__ (self,save_steps=None,save_secs=None,output_dir=""):
+    self._output_tag = "step-{}"
+    self._output_dir = output_dir
+    self._timer = SecondOrStepTimer(every_secs=save_secs, every_steps=save_steps)
+
+  def begin(self):
+    self._next_step = None
+    self._global_step_tensor = training_util.get_global_step()
+    self._writer = tf.summary.FileWriter (self._output_dir, tf.get_default_graph())
+
+    if self._global_step_tensor is None:
+      raise RuntimeError("Global step should be created to use ProfilerHook.")
+
+  def before_run(self, run_context):
+    self._request_summary = (self._next_step is None or self._timer.should_trigger_for_step(self._next_step))
+    requests = {"global_step": self._global_step_tensor}
+    opts = (tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE) if self._request_summary else None)
+    return SessionRunArgs(requests, options=opts)
+
+  def after_run(self, run_context, run_values):
+    stale_global_step = run_values.results["global_step"]
+    global_step = stale_global_step + 1
+    if self._request_summary:
+      global_step = run_context.session.run(self._global_step_tensor)
+      self._writer.add_run_metadata(run_values.run_metadata, self._output_tag.format(global_step))
+      self._writer.flush()
+    self._next_step = global_step + 1
+
+  def end(self, session):
+    self._writer.close()
+
 
 ################################################################################
 # Functions for input processing.
@@ -189,7 +225,7 @@ def override_flags_and_set_envars_for_gpu_thread_pool(flags_obj):
   current platform of interest, which changes over time.
 
   On systems with small numbers of cpu cores, e.g. under 8 logical cores,
-  setting up a gpu thread pool with `tf_gpu_thread_mode=gpu_private` may perform
+  setting up a gpu thread pool with `tf_gpu_thread_mode=gpu_private` gs_obj.model_dir"may perform
   poorly.
 
   Args:
@@ -552,8 +588,12 @@ def resnet_main(
     n_loops = math.ceil(flags_obj.train_epochs / flags_obj.epochs_between_evals)
     schedule = [flags_obj.epochs_between_evals for _ in range(int(n_loops))]
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
+  
 
-  hooks = [tf.train.ProfilerHook(output_dir=flag_obj.model_dir, save_secs=600, show_memory=False)
+  fil = open("path_tem.txt","w")
+  fil.write(flags_obj.model_dir)
+  fil.close()
+  hooks = [MetadataHook(save_steps=1, output_dir='.')]
   for cycle_index, num_train_epochs in enumerate(schedule):
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
