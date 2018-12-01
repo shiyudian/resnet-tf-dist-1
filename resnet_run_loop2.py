@@ -553,30 +553,33 @@ def resnet_main(
     schedule = [flags_obj.epochs_between_evals for _ in range(int(n_loops))]
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
-  hooks = [tf.train.ProfilerHook(output_dir=flags_obj.model_dir,save_secs=600,show_memory=False)]
-  for cycle_index, num_train_epochs in enumerate(schedule):
-    tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
+  with tf.Session() as sess:
+    run_metadata = tf.RunMetadata()
+    for cycle_index, num_train_epochs in enumerate(schedule):
+      tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
+      if num_train_epochs:
+        sess.run(classifier.train(input_fn=lambda: input_fn_train(num_train_epochs),hooks=train_hooks, max_steps=flags_obj.max_train_steps),run_metadata=run_metadata)
 
-    if num_train_epochs:
-      classifier.train(input_fn=lambda: input_fn_train(num_train_epochs),
-                       hooks=hooks, max_steps=flags_obj.max_train_steps)
+      tf.logging.info('Starting to evaluate.')
+      
+	  # flags_obj.max_train_steps is generally associated with testing and
+	  # profiling. As a result it is frequently called with synthetic data, which
+      # will iterate forever. Passing steps=flags_obj.max_train_steps allows the
+      # eval (which is generally unimportant in those circumstances) to terminate.
+      # Note that eval will run for max_train_steps each loop, regardless of the
+	  # global_step count.
 
-    tf.logging.info('Starting to evaluate.')
+      eval_results = sess.run(classifier.evaluate(input_fn=input_fn_eval,steps=flags_obj.max_train_steps),run_metadata=run_metadata)
+      benchmark_logger.log_evaluation_result(eval_results)
 
-    # flags_obj.max_train_steps is generally associated with testing and
-    # profiling. As a result it is frequently called with synthetic data, which
-    # will iterate forever. Passing steps=flags_obj.max_train_steps allows the
-    # eval (which is generally unimportant in those circumstances) to terminate.
-    # Note that eval will run for max_train_steps each loop, regardless of the
-    # global_step count.
-    eval_results = classifier.evaluate(input_fn=input_fn_eval,
-                                       steps=flags_obj.max_train_steps)
+      if model_helpers.past_stop_threshold(flags_obj.stop_threshold, eval_results['accuracy']):
+        break
+		
+    fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+    chrome_trace = fetched_timeline.generate_chrome_trace_format()
+    with open('timeline_run_loop.json', 'w') as f:
+      f.write(chrome_trace)
 
-    benchmark_logger.log_evaluation_result(eval_results)
-
-    if model_helpers.past_stop_threshold(
-        flags_obj.stop_threshold, eval_results['accuracy']):
-      break
 
   if flags_obj.export_dir is not None:
     # Exports a saved model for the given classifier.
