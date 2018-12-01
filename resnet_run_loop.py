@@ -553,7 +553,8 @@ def resnet_main(
     schedule = [flags_obj.epochs_between_evals for _ in range(int(n_loops))]
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
-  hooks = [tf.train.ProfilerHook(output_dir=flag_obj.model_dir, save_secs=600, show_memory=False)
+# generate json file under current directory
+  hooks = [tf.train.ProfilerHook(output_dir='.', save_secs=600, show_memory=False)]
   for cycle_index, num_train_epochs in enumerate(schedule):
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
