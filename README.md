@@ -49,5 +49,18 @@ lsof -wni tcp:2222
 kill id
 ```
 
-### cifar10_main_profiler.py
+### use of tf.profiler
+#### changes made in cifar10_main_profiler.py
 This file added profiler-ui which produces a profile file (timeline) must be read by chrome
+please download profiler-ui in order to check the timeline. Here we use profile_100 as an example
+
+1. rename resnet_run_loop_official.py back to resnet_run_loop.py since no changes made if use profiler
+2. run cifar10_main_profiler.py to generate profile file (ex: profile_100)
+3. run the cmd below
+```python ui.py --profile_context_path=profiler-ui/profile_100```
+4. if the brower pop-up is not chrome, copy the URL to chrome. Now you will be able to see the timeline
+
+### use of json file
+#### changes made in resnet_run_loop.py
+This file is used to generate json file while tracking the training
+open ```chrome://tracing``` in chrome brower then load the json file. Now you will be able to see the timeline
