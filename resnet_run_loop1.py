@@ -42,7 +42,7 @@ from official.resnet import imagenet_preprocessing
 from official.utils.misc import distribution_utils
 from official.utils.misc import model_helpers
 
-
+from tensorflow.python.client import timeline
 ################################################################################
 # Functions for input processing.
 ################################################################################
@@ -411,6 +411,8 @@ def resnet_model_fn(features, labels, mode, model_class,
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     train_op = tf.group(minimize_op, update_ops)
+	# call generate_json 
+    #generate_json(train_op)
   else:
     train_op = None
 
@@ -427,6 +429,7 @@ def resnet_model_fn(features, labels, mode, model_class,
   tf.identity(accuracy_top_5[1], name='train_accuracy_top_5')
   tf.summary.scalar('train_accuracy', accuracy[1])
   tf.summary.scalar('train_accuracy_top_5', accuracy_top_5[1])
+
 
   return tf.estimator.EstimatorSpec(
       mode=mode,
@@ -516,6 +519,7 @@ def resnet_main(
       flags_obj.hooks,
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
+  
 
   def input_fn_train(num_epochs):
     return input_function(
@@ -553,33 +557,29 @@ def resnet_main(
     schedule = [flags_obj.epochs_between_evals for _ in range(int(n_loops))]
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
-  with tf.Session() as sess:
-    run_metadata = tf.RunMetadata()
-    for cycle_index, num_train_epochs in enumerate(schedule):
-      tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
-      if num_train_epochs:
-        sess.run(classifier.train(input_fn=lambda: input_fn_train(num_train_epochs),hooks=train_hooks, max_steps=flags_obj.max_train_steps),run_metadata=run_metadata)
+  for cycle_index, num_train_epochs in enumerate(schedule):
+    tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
-      tf.logging.info('Starting to evaluate.')
-      
-	  # flags_obj.max_train_steps is generally associated with testing and
-	  # profiling. As a result it is frequently called with synthetic data, which
-      # will iterate forever. Passing steps=flags_obj.max_train_steps allows the
-      # eval (which is generally unimportant in those circumstances) to terminate.
-      # Note that eval will run for max_train_steps each loop, regardless of the
-	  # global_step count.
+    if num_train_epochs:
+      classifier.train(input_fn=lambda: input_fn_train(num_train_epochs),
+                       hooks=train_hooks, max_steps=flags_obj.max_train_steps)
 
-      eval_results = sess.run(classifier.evaluate(input_fn=input_fn_eval,steps=flags_obj.max_train_steps),run_metadata=run_metadata)
-      benchmark_logger.log_evaluation_result(eval_results)
+    tf.logging.info('Starting to evaluate.')
 
-      if model_helpers.past_stop_threshold(flags_obj.stop_threshold, eval_results['accuracy']):
-        break
-		
-    fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-	chrome_trace = fetched_timeline.generate_chrome_trace_format()
-	with open('timeline_run_loop.json', 'w') as f:
-		f.write(chrome_trace)
+    # flags_obj.max_train_steps is generally associated with testing and
+    # profiling. As a result it is frequently called with synthetic data, which
+    # will iterate forever. Passing steps=flags_obj.max_train_steps allows the
+    # eval (which is generally unimportant in those circumstances) to terminate.
+    # Note that eval will run for max_train_steps each loop, regardless of the
+    # global_step count.
+    eval_results = classifier.evaluate(input_fn=input_fn_eval,
+                                       steps=flags_obj.max_train_steps)
 
+    benchmark_logger.log_evaluation_result(eval_results)
+
+    if model_helpers.past_stop_threshold(
+        flags_obj.stop_threshold, eval_results['accuracy']):
+      break
 
   if flags_obj.export_dir is not None:
     # Exports a saved model for the given classifier.
@@ -641,3 +641,19 @@ def define_resnet_flags(resnet_size_choices=None):
     flags.DEFINE_string(**choice_kwargs)
   else:
     flags.DEFINE_enum(enum_values=resnet_size_choices, **choice_kwargs)
+
+
+def generate_json(train_op):
+  with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    options = tf.RunOptions(trace_level = tf.RunOptions.FULL_TRACE)
+    run_metadata = tf.RunMetadata()
+    for i in range(2):
+      
+      sess.run(train_op, options=options,run_metadata=run_metadata)
+
+	  # Create the Timeline object, and write it to a json file
+      fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+      chrome_trace = fetched_timeline.generate_chrome_trace_format()
+      with open('timeline_run_loop.json' % i,'w') as f:
+        f.write(chrome_trace)
